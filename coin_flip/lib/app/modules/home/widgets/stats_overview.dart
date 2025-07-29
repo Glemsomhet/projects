@@ -5,7 +5,7 @@ import 'package:coin_flip/app/modules/home/controllers/home_controller.dart';
 class StatsOverview extends StatelessWidget {
   final HomeController controller = Get.find();
 
-  StatsOverview({Key? key}) : super(key: key);
+  StatsOverview({super.key});
 
   @override
   Widget build(BuildContext context) {

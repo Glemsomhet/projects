@@ -2,8 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:coin_flip/app/routes/app_pages.dart';
 import 'package:coin_flip/app/modules/home/controllers/home_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://mpuydhtgbegtthfdmpch.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wdXlkaHRnYmVndHRoZmRtcGNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3OTEwNDksImV4cCI6MjA2OTM2NzA0OX0.-GQ4O9ZfLu2cse_Co6-D6ntd9diJcdPM6wyurCn8WtU',
+  );
+
+  // Sign in anonymously
+  await Supabase.instance.client.auth.signInAnonymously();
+
   runApp(const MyApp());
 }
 

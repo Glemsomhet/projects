@@ -6,7 +6,7 @@ import 'package:coin_flip/app/modules/home/controllers/home_controller.dart';
 class CoinFlipper extends StatelessWidget {
   final HomeController controller = Get.find();
 
-  CoinFlipper({Key? key}) : super(key: key);
+  CoinFlipper({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +35,8 @@ class CoinFlipper extends StatelessWidget {
         tilt = tilt < 0.0 ? 0.0 : tilt;
         return Transform(
           transform: Matrix4.rotationY(rotateAnim.value)..setEntry(3, 0, tilt),
-          child: widget,
           alignment: Alignment.center,
+          child: widget,
         );
       },
     );
@@ -54,9 +54,9 @@ class CoinFlipper extends StatelessWidget {
 
   Widget _buildCoinFace(String result) {
     String imagePath = 'assets/images/yazi.png'; // Default
-    if (result == 'yazi') {
+    if (result == 'YAZI') {
       imagePath = 'assets/images/yazi.png';
-    } else if (result == 'Tura') {
+    } else if (result == 'TURA') {
       imagePath = 'assets/images/Tura.png';
     }
 

@@ -7,7 +7,7 @@ import 'package:coin_flip/app/modules/home/widgets/stats_overview.dart';
 import 'package:coin_flip/app/routes/app_pages.dart';
 
 class HomeView extends GetView<HomeController> {
-  const HomeView({Key? key}) : super(key: key);
+  const HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {

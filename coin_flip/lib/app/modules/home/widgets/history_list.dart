@@ -5,7 +5,7 @@ import 'package:coin_flip/app/modules/home/controllers/home_controller.dart';
 class HistoryList extends StatelessWidget {
   final HomeController controller = Get.find();
 
-  HistoryList({Key? key}) : super(key: key);
+  HistoryList({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class HistoryList extends StatelessWidget {
                     width: 80,
                     margin: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
