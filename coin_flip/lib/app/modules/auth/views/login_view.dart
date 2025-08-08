@@ -9,7 +9,7 @@ class LoginView extends GetView<AuthController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: const Text('Giriş Yap'),
         centerTitle: true,
       ),
       body: Center(
@@ -19,14 +19,16 @@ class LoginView extends GetView<AuthController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               TextFormField(
-                controller: controller.emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
+                controller: controller.emailOrUsernameController,
+                decoration: const InputDecoration(
+                    labelText: 'Email veya Kullanıcı Adı'),
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: controller.passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: const InputDecoration(labelText: 'Şifre'),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
@@ -34,11 +36,11 @@ class LoginView extends GetView<AuthController> {
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                       onPressed: controller.signIn,
-                      child: const Text('Login'),
+                      child: const Text('Giriş Yap'),
                     )),
               TextButton(
                 onPressed: () => Get.toNamed(Routes.register),
-                child: const Text("Don't have an account? Sign up"),
+                child: const Text('Hesabın yok mu? Kayıt ol'),
               ),
             ],
           ),

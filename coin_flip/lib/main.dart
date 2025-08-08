@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:coin_flip/app/routes/app_pages.dart';
 import 'package:coin_flip/app/data/database_binding.dart'; // DatabaseBinding'i import et
+import 'package:coin_flip/app/modules/auth/services/auth_service.dart';
 
 Future<void> main() async {
   // Flutter uygulamasının başlamadan önce Flutter engine binding'lerinin
@@ -21,7 +22,11 @@ class MyApp extends StatelessWidget {
       title: 'Yazı Tura',
       // Uygulama başlarken veritabanı bağlantısını ve diğer servisleri
       // yüklemek için initialBinding kullanılır.
-      initialBinding: DatabaseBinding(),
+      initialBinding: BindingsBuilder(() {
+        DatabaseBinding().dependencies();
+        Get.putAsync<AuthService>(() async => AuthService().init(),
+            permanent: true);
+      }),
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,
       theme: ThemeData(

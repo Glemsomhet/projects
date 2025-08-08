@@ -13,6 +13,14 @@ class Users extends Table {
   TextColumn get firstName => text().named('first_name')();
   TextColumn get lastName => text().named('last_name')();
   TextColumn get passwordHash => text().named('password_hash')();
+  BoolColumn get isVerified =>
+      boolean().named('is_verified').withDefault(const Constant(false))();
+}
+
+@DataClassName('KullaniciRow')
+class Kullanici extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
 }
 
 @DataClassName('GameHistoryEntry')
@@ -35,14 +43,14 @@ class UserStats extends Table {
 // --- Veritabanı Sınıfı ---
 
 @DriftDatabase(
-  tables: [Users, GameHistory, UserStats],
-  daos: [UsersDao, GameHistoryDao, UserStatsDao],
+  tables: [Users, Kullanici, GameHistory, UserStats],
+  daos: [UsersDao, KullaniciDao, GameHistoryDao, UserStatsDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2; // <-- SÜRÜMÜ 2'YE YÜKSELTTİK
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -54,6 +62,16 @@ class AppDatabase extends _$AppDatabase {
         if (from < 2) {
           // Versiyon 1'den 2'ye geçerken eksik olan 'users' tablosunu oluştur.
           await m.createTable(users);
+        }
+        if (from < 3) {
+          // Versiyon 2'den 3'e geçişte 'kullanici' tablosunu oluştur.
+          await m.createTable(kullanici);
+        }
+        if (from < 4) {
+          // Versiyon 3'ten 4'e: users tablosuna is_verified sütunu ekle (idempotent)
+          await customStatement(
+            "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_verified boolean NOT NULL DEFAULT false",
+          );
         }
       },
     );
@@ -83,7 +101,36 @@ class UsersDao extends DatabaseAccessor<AppDatabase> with _$UsersDaoMixin {
   final AppDatabase db;
   UsersDao(this.db) : super(db);
 
-  // Buraya kullanıcı işlemleri için metodlar eklenebilir (örn: createUser, getUser)
+  Future<int> createUser({
+    required String username,
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String passwordHash,
+  }) async {
+    return into(users).insert(UsersCompanion.insert(
+      username: username,
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      passwordHash: passwordHash,
+      isVerified: const Value(false),
+    ));
+  }
+
+  Future<User?> findByUsernameOrEmail(String identifier) async {
+    return (select(users)
+          ..where((u) =>
+              u.username.equals(identifier) | u.email.equals(identifier)))
+        .getSingleOrNull();
+  }
+}
+
+@DriftAccessor(tables: [Kullanici])
+class KullaniciDao extends DatabaseAccessor<AppDatabase>
+    with _$KullaniciDaoMixin {
+  final AppDatabase db;
+  KullaniciDao(this.db) : super(db);
 }
 
 @DriftAccessor(tables: [GameHistory])

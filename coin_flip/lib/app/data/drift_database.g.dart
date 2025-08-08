@@ -60,23 +60,9 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_verified" IN (0, 1))'),
       defaultValue: const Constant(false));
-  static const VerificationMeta _verificationCodeMeta =
-      const VerificationMeta('verificationCode');
   @override
-  late final GeneratedColumn<String> verificationCode = GeneratedColumn<String>(
-      'verification_code', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  @override
-  List<GeneratedColumn> get $columns => [
-        id,
-        username,
-        email,
-        firstName,
-        lastName,
-        passwordHash,
-        isVerified,
-        verificationCode
-      ];
+  List<GeneratedColumn> get $columns =>
+      [id, username, email, firstName, lastName, passwordHash, isVerified];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -128,12 +114,6 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
           isVerified.isAcceptableOrUnknown(
               data['is_verified']!, _isVerifiedMeta));
     }
-    if (data.containsKey('verification_code')) {
-      context.handle(
-          _verificationCodeMeta,
-          verificationCode.isAcceptableOrUnknown(
-              data['verification_code']!, _verificationCodeMeta));
-    }
     return context;
   }
 
@@ -157,8 +137,6 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
           .read(DriftSqlType.string, data['${effectivePrefix}password_hash'])!,
       isVerified: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_verified'])!,
-      verificationCode: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}verification_code']),
     );
   }
 
@@ -176,7 +154,6 @@ class User extends DataClass implements Insertable<User> {
   final String lastName;
   final String passwordHash;
   final bool isVerified;
-  final String? verificationCode;
   const User(
       {required this.id,
       required this.username,
@@ -184,8 +161,7 @@ class User extends DataClass implements Insertable<User> {
       required this.firstName,
       required this.lastName,
       required this.passwordHash,
-      required this.isVerified,
-      this.verificationCode});
+      required this.isVerified});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -196,9 +172,6 @@ class User extends DataClass implements Insertable<User> {
     map['last_name'] = Variable<String>(lastName);
     map['password_hash'] = Variable<String>(passwordHash);
     map['is_verified'] = Variable<bool>(isVerified);
-    if (!nullToAbsent || verificationCode != null) {
-      map['verification_code'] = Variable<String>(verificationCode);
-    }
     return map;
   }
 
@@ -211,9 +184,6 @@ class User extends DataClass implements Insertable<User> {
       lastName: Value(lastName),
       passwordHash: Value(passwordHash),
       isVerified: Value(isVerified),
-      verificationCode: verificationCode == null && nullToAbsent
-          ? const Value.absent()
-          : Value(verificationCode),
     );
   }
 
@@ -228,7 +198,6 @@ class User extends DataClass implements Insertable<User> {
       lastName: serializer.fromJson<String>(json['lastName']),
       passwordHash: serializer.fromJson<String>(json['passwordHash']),
       isVerified: serializer.fromJson<bool>(json['isVerified']),
-      verificationCode: serializer.fromJson<String?>(json['verificationCode']),
     );
   }
   @override
@@ -242,7 +211,6 @@ class User extends DataClass implements Insertable<User> {
       'lastName': serializer.toJson<String>(lastName),
       'passwordHash': serializer.toJson<String>(passwordHash),
       'isVerified': serializer.toJson<bool>(isVerified),
-      'verificationCode': serializer.toJson<String?>(verificationCode),
     };
   }
 
@@ -253,8 +221,7 @@ class User extends DataClass implements Insertable<User> {
           String? firstName,
           String? lastName,
           String? passwordHash,
-          bool? isVerified,
-          Value<String?> verificationCode = const Value.absent()}) =>
+          bool? isVerified}) =>
       User(
         id: id ?? this.id,
         username: username ?? this.username,
@@ -263,9 +230,6 @@ class User extends DataClass implements Insertable<User> {
         lastName: lastName ?? this.lastName,
         passwordHash: passwordHash ?? this.passwordHash,
         isVerified: isVerified ?? this.isVerified,
-        verificationCode: verificationCode.present
-            ? verificationCode.value
-            : this.verificationCode,
       );
   User copyWithCompanion(UsersCompanion data) {
     return User(
@@ -279,9 +243,6 @@ class User extends DataClass implements Insertable<User> {
           : this.passwordHash,
       isVerified:
           data.isVerified.present ? data.isVerified.value : this.isVerified,
-      verificationCode: data.verificationCode.present
-          ? data.verificationCode.value
-          : this.verificationCode,
     );
   }
 
@@ -294,15 +255,14 @@ class User extends DataClass implements Insertable<User> {
           ..write('firstName: $firstName, ')
           ..write('lastName: $lastName, ')
           ..write('passwordHash: $passwordHash, ')
-          ..write('isVerified: $isVerified, ')
-          ..write('verificationCode: $verificationCode')
+          ..write('isVerified: $isVerified')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, username, email, firstName, lastName,
-      passwordHash, isVerified, verificationCode);
+  int get hashCode => Object.hash(
+      id, username, email, firstName, lastName, passwordHash, isVerified);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -313,8 +273,7 @@ class User extends DataClass implements Insertable<User> {
           other.firstName == this.firstName &&
           other.lastName == this.lastName &&
           other.passwordHash == this.passwordHash &&
-          other.isVerified == this.isVerified &&
-          other.verificationCode == this.verificationCode);
+          other.isVerified == this.isVerified);
 }
 
 class UsersCompanion extends UpdateCompanion<User> {
@@ -325,7 +284,6 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> lastName;
   final Value<String> passwordHash;
   final Value<bool> isVerified;
-  final Value<String?> verificationCode;
   const UsersCompanion({
     this.id = const Value.absent(),
     this.username = const Value.absent(),
@@ -334,7 +292,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.lastName = const Value.absent(),
     this.passwordHash = const Value.absent(),
     this.isVerified = const Value.absent(),
-    this.verificationCode = const Value.absent(),
   });
   UsersCompanion.insert({
     this.id = const Value.absent(),
@@ -344,7 +301,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     required String lastName,
     required String passwordHash,
     this.isVerified = const Value.absent(),
-    this.verificationCode = const Value.absent(),
   })  : username = Value(username),
         email = Value(email),
         firstName = Value(firstName),
@@ -358,7 +314,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? lastName,
     Expression<String>? passwordHash,
     Expression<bool>? isVerified,
-    Expression<String>? verificationCode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -368,7 +323,6 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (lastName != null) 'last_name': lastName,
       if (passwordHash != null) 'password_hash': passwordHash,
       if (isVerified != null) 'is_verified': isVerified,
-      if (verificationCode != null) 'verification_code': verificationCode,
     });
   }
 
@@ -379,8 +333,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       Value<String>? firstName,
       Value<String>? lastName,
       Value<String>? passwordHash,
-      Value<bool>? isVerified,
-      Value<String?>? verificationCode}) {
+      Value<bool>? isVerified}) {
     return UsersCompanion(
       id: id ?? this.id,
       username: username ?? this.username,
@@ -389,7 +342,6 @@ class UsersCompanion extends UpdateCompanion<User> {
       lastName: lastName ?? this.lastName,
       passwordHash: passwordHash ?? this.passwordHash,
       isVerified: isVerified ?? this.isVerified,
-      verificationCode: verificationCode ?? this.verificationCode,
     );
   }
 
@@ -417,9 +369,6 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (isVerified.present) {
       map['is_verified'] = Variable<bool>(isVerified.value);
     }
-    if (verificationCode.present) {
-      map['verification_code'] = Variable<String>(verificationCode.value);
-    }
     return map;
   }
 
@@ -432,8 +381,7 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('firstName: $firstName, ')
           ..write('lastName: $lastName, ')
           ..write('passwordHash: $passwordHash, ')
-          ..write('isVerified: $isVerified, ')
-          ..write('verificationCode: $verificationCode')
+          ..write('isVerified: $isVerified')
           ..write(')'))
         .toString();
   }
@@ -459,9 +407,7 @@ class $KullaniciTable extends Kullanici
   @override
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      defaultValue: const CustomExpression('now()'));
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns => [id, createdAt];
   @override
@@ -480,6 +426,8 @@ class $KullaniciTable extends Kullanici
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
     }
     return context;
   }
@@ -578,8 +526,8 @@ class KullaniciCompanion extends UpdateCompanion<KullaniciRow> {
   });
   KullaniciCompanion.insert({
     this.id = const Value.absent(),
-    this.createdAt = const Value.absent(),
-  });
+    required DateTime createdAt,
+  }) : createdAt = Value(createdAt);
   static Insertable<KullaniciRow> custom({
     Expression<int>? id,
     Expression<DateTime>? createdAt,
@@ -1209,7 +1157,6 @@ typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
   required String lastName,
   required String passwordHash,
   Value<bool> isVerified,
-  Value<String?> verificationCode,
 });
 typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
   Value<int> id,
@@ -1219,7 +1166,6 @@ typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
   Value<String> lastName,
   Value<String> passwordHash,
   Value<bool> isVerified,
-  Value<String?> verificationCode,
 });
 
 class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
@@ -1250,10 +1196,6 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<bool> get isVerified => $composableBuilder(
       column: $table.isVerified, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<String> get verificationCode => $composableBuilder(
-      column: $table.verificationCode,
-      builder: (column) => ColumnFilters(column));
 }
 
 class $$UsersTableOrderingComposer
@@ -1286,10 +1228,6 @@ class $$UsersTableOrderingComposer
 
   ColumnOrderings<bool> get isVerified => $composableBuilder(
       column: $table.isVerified, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<String> get verificationCode => $composableBuilder(
-      column: $table.verificationCode,
-      builder: (column) => ColumnOrderings(column));
 }
 
 class $$UsersTableAnnotationComposer
@@ -1321,9 +1259,6 @@ class $$UsersTableAnnotationComposer
 
   GeneratedColumn<bool> get isVerified => $composableBuilder(
       column: $table.isVerified, builder: (column) => column);
-
-  GeneratedColumn<String> get verificationCode => $composableBuilder(
-      column: $table.verificationCode, builder: (column) => column);
 }
 
 class $$UsersTableTableManager extends RootTableManager<
@@ -1356,7 +1291,6 @@ class $$UsersTableTableManager extends RootTableManager<
             Value<String> lastName = const Value.absent(),
             Value<String> passwordHash = const Value.absent(),
             Value<bool> isVerified = const Value.absent(),
-            Value<String?> verificationCode = const Value.absent(),
           }) =>
               UsersCompanion(
             id: id,
@@ -1366,7 +1300,6 @@ class $$UsersTableTableManager extends RootTableManager<
             lastName: lastName,
             passwordHash: passwordHash,
             isVerified: isVerified,
-            verificationCode: verificationCode,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -1376,7 +1309,6 @@ class $$UsersTableTableManager extends RootTableManager<
             required String lastName,
             required String passwordHash,
             Value<bool> isVerified = const Value.absent(),
-            Value<String?> verificationCode = const Value.absent(),
           }) =>
               UsersCompanion.insert(
             id: id,
@@ -1386,7 +1318,6 @@ class $$UsersTableTableManager extends RootTableManager<
             lastName: lastName,
             passwordHash: passwordHash,
             isVerified: isVerified,
-            verificationCode: verificationCode,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -1409,7 +1340,7 @@ typedef $$UsersTableProcessedTableManager = ProcessedTableManager<
     PrefetchHooks Function()>;
 typedef $$KullaniciTableCreateCompanionBuilder = KullaniciCompanion Function({
   Value<int> id,
-  Value<DateTime> createdAt,
+  required DateTime createdAt,
 });
 typedef $$KullaniciTableUpdateCompanionBuilder = KullaniciCompanion Function({
   Value<int> id,
@@ -1499,7 +1430,7 @@ class $$KullaniciTableTableManager extends RootTableManager<
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
+            required DateTime createdAt,
           }) =>
               KullaniciCompanion.insert(
             id: id,
