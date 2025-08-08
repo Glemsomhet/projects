@@ -14,7 +14,7 @@ class StatsView extends StatelessWidget {
         title: const Text('İstatistikler'),
       ),
       body: Obx(
-        () => controller.totalFlips.value == 0
+        () => controller.userStats.value.totalFlips == 0
             ? const Center(
                 child: Text(
                   'Henüz hiç atış yapılmadı.',
@@ -46,27 +46,24 @@ class StatsView extends StatelessWidget {
   }
 
   Widget _buildStatsList() {
-    double yaziPercentage =
-        (controller.yaziCount.value / controller.totalFlips.value) * 100;
-    double TuraPercentage =
-        (controller.TuraCount.value / controller.totalFlips.value) * 100;
+    final stats = controller.userStats.value;
+    double yaziPercentage = (stats.headsCount / stats.totalFlips) * 100;
+    double turaPercentage = (stats.tailsCount / stats.totalFlips) * 100;
 
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        _buildStatRow(
-            'Toplam Atış Sayısı:', controller.totalFlips.value.toString()),
+        _buildStatRow('Toplam Atış Sayısı:', stats.totalFlips.toString()),
         const Divider(height: 30),
-        _buildStatRow('yazi Sayısı:', controller.yaziCount.value.toString()),
-        _buildStatRow('Tura Sayısı:', controller.TuraCount.value.toString()),
+        _buildStatRow('Yazı Sayısı:', stats.headsCount.toString()),
+        _buildStatRow('Tura Sayısı:', stats.tailsCount.toString()),
         const Divider(height: 30),
-        _buildStatRow('yazi Yüzdesi:', '${yaziPercentage.toStringAsFixed(1)}%'),
-        _buildStatRow('Tura Yüzdesi:', '${TuraPercentage.toStringAsFixed(1)}%'),
+        _buildStatRow('Yazı Yüzdesi:', '${yaziPercentage.toStringAsFixed(1)}%'),
+        _buildStatRow('Tura Yüzdesi:', '${turaPercentage.toStringAsFixed(1)}%'),
         const Divider(height: 30),
         _buildStatRow('Mevcut Seri:',
             '${controller.currentStreak.value} (${controller.currentStreakResult.value})'),
-        _buildStatRow(
-            'En Uzun Seri:', controller.longestStreak.value.toString()),
+        _buildStatRow('En Uzun Seri:', stats.bestStreak.toString()),
       ],
     );
   }

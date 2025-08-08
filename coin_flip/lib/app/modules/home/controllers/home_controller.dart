@@ -2,142 +2,103 @@ import 'package:get/get.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:vibration/vibration.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:coin_flip/app/data/drift_database.dart';
+import 'package:drift/drift.dart' as drift;
 
 class HomeController extends GetxController {
-  final SupabaseClient supabase = Supabase.instance.client;
+  final AppDatabase _db = Get.find<AppDatabase>();
 
-  // --- Core Coin Flip Logic ---
   var result = '...'.obs;
   var isFlipping = false.obs;
   final Random _random = Random();
 
-  // --- Feature Controllers ---
-  var history = <String>[].obs;
+  var history = <GameHistoryEntry>[].obs;
+  var userStats = UserStat(
+          id: 1,
+          totalFlips: 0,
+          headsCount: 0,
+          tailsCount: 0,
+          bestStreak: 0,
+          updatedAt: DateTime.now())
+      .obs;
 
-  // --- Statistics ---
-  var yaziCount = 0.obs;
-  var TuraCount = 0.obs;
-  var totalFlips = 0.obs;
-
-  // --- Streak Counter ---
   var currentStreak = 0.obs;
   var currentStreakResult = ''.obs;
-  var longestStreak = 0.obs;
-
-  // --- Settings (will be moved to a settings service later) ---
   var isVibrationEnabled = true.obs;
 
   @override
   void onInit() {
     super.onInit();
     result.value = 'Parayı çevirmek için butona bas.';
-    print("HomeController initialized. Fetching initial data...");
-    _fetchInitialData();
+    _fetchAndListen();
   }
 
-  Future<void> _fetchInitialData() async {
-    try {
-      final userId = supabase.auth.currentUser?.id;
-      if (userId == null) {
-        print("Fetch failed: User is not logged in.");
-        return;
-      }
-      print("Fetching data for user: $userId");
+  Future<void> _fetchAndListen() async {
+    // 1. Başlangıç verilerini çek
+    var initialStats = await _db.userStatsDao.getStats();
 
-      final statsResponse = await supabase
-          .from('user_stats')
-          .select()
-          .eq('user_id', userId)
-          .single();
-
-      print("Stats data fetched: $statsResponse");
-      yaziCount.value = statsResponse['heads_count'] ?? 0;
-      TuraCount.value = statsResponse['tails_count'] ?? 0;
-      totalFlips.value = statsResponse['total_flips'] ?? 0;
-      longestStreak.value = statsResponse['best_streak'] ?? 0;
-
-      final historyResponse = await supabase
-          .from('game_history')
-          .select('result')
-          .eq('user_id', userId)
-          .order('created_at', ascending: false)
-          .limit(10);
-
-      print("History data fetched: $historyResponse");
-      history.value = historyResponse
-          .map<String>((row) => row['result'] as String)
-          .toList();
-    } catch (e) {
-      print('Error fetching initial data: $e');
+    if (initialStats == null) {
+      // Varsayılan istatistikleri oluştur ve kaydet
+      final defaultStats = UserStatsCompanion.insert(updatedAt: DateTime.now());
+      await _db.userStatsDao.saveStats(defaultStats);
+      initialStats = await _db.userStatsDao.getStats();
     }
+
+    userStats.value = initialStats!;
+
+    // 2. Veritabanındaki değişiklikleri dinlemeye başla
+    _listenToDatabase();
+  }
+
+  void _listenToDatabase() {
+    _db.userStatsDao.watchStats().listen((stats) {
+      if (stats != null) {
+        userStats.value = stats;
+      }
+    });
+
+    _db.gameHistoryDao.watchAllHistoryEntries().listen((entries) {
+      history.value =
+          entries.reversed.toList(); // En son atış en başta görünsün
+    });
   }
 
   Future<void> flipCoin() async {
     if (isFlipping.value) return;
-
     isFlipping.value = true;
     result.value = '...';
-
-    if (isVibrationEnabled.value) {
-      Vibration.vibrate();
-    }
-
-    // Animation Duration
+    if (isVibrationEnabled.value) Vibration.vibrate();
     await Future.delayed(const Duration(milliseconds: 1500));
-
     final isHeads = _random.nextBool();
-    final dbResult = isHeads ? 'heads' : 'tails';
-    result.value = isHeads ? 'YAZI' : 'TURA';
-
-    await _updateStats(dbResult);
-    _updateStreak(result.value); // Pass the UI value to streak logic
-    _addToHistory(result.value); // Pass the UI value to history
-
-    if (isVibrationEnabled.value) {
-      Vibration.vibrate();
-    }
-
+    final uiResult = isHeads ? 'YAZI' : 'TURA';
+    result.value = uiResult;
+    _updateStreak(uiResult);
+    await _addToHistory(uiResult);
+    await _updateStats(uiResult);
+    if (isVibrationEnabled.value) Vibration.vibrate();
     isFlipping.value = false;
   }
 
-  Future<void> _updateStats(String dbResult) async {
-    // This logic no longer directly depends on the result string
-    totalFlips.value++;
-    if (dbResult == 'heads') {
-      yaziCount.value++;
-    } else {
-      TuraCount.value++;
-    }
+  Future<void> _updateStats(String uiResult) async {
+    final newTotalFlips = userStats.value.totalFlips + 1;
+    final newHeadsCount = uiResult == 'YAZI'
+        ? userStats.value.headsCount + 1
+        : userStats.value.headsCount;
+    final newTailsCount = uiResult == 'TURA'
+        ? userStats.value.tailsCount + 1
+        : userStats.value.tailsCount;
 
-    try {
-      final userId = supabase.auth.currentUser?.id;
-      if (userId == null) {
-        print("Stat update failed: User is not logged in.");
-        return;
-      }
-      print("Updating stats for user: $userId with result: $dbResult");
-
-      print("Inserting into game_history...");
-      await supabase.from('game_history').insert({
-        'user_id': userId,
-        'result': dbResult,
-      });
-      print("Insertion complete.");
-
-      print("Upserting user_stats...");
-      await supabase.from('user_stats').upsert({
-        'user_id': userId,
-        'total_flips': totalFlips.value,
-        'heads_count': yaziCount.value,
-        'tails_count': TuraCount.value,
-        'best_streak': longestStreak.value,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-      print("Upsert complete.");
-    } catch (e) {
-      print('Error updating stats: $e');
-    }
+    final statsCompanion = UserStatsCompanion(
+      id: const drift.Value(1),
+      totalFlips: drift.Value(newTotalFlips),
+      headsCount: drift.Value(newHeadsCount),
+      tailsCount: drift.Value(newTailsCount),
+      bestStreak: drift.Value(userStats.value.bestStreak > currentStreak.value
+          ? userStats.value.bestStreak
+          : currentStreak.value),
+      updatedAt: drift.Value(DateTime.now()),
+    );
+    await _db.userStatsDao.saveStats(statsCompanion);
   }
 
   void _updateStreak(String result) {
@@ -147,63 +108,26 @@ class HomeController extends GetxController {
       currentStreakResult.value = result;
       currentStreak.value = 1;
     }
-
-    if (currentStreak.value > longestStreak.value) {
-      longestStreak.value = currentStreak.value;
-    }
   }
 
-  void _addToHistory(String result) {
-    history.insert(0, result);
-    if (history.length > 10) {
-      history.removeLast();
-    }
+  Future<void> _addToHistory(String result) async {
+    final historyCompanion = GameHistoryCompanion(
+      result: drift.Value(result),
+      playedAt: drift.Value(DateTime.now()),
+    );
+    await _db.gameHistoryDao.addHistoryEntry(historyCompanion);
   }
 
   Future<void> resetStats() async {
-    yaziCount.value = 0;
-    TuraCount.value = 0;
-    totalFlips.value = 0;
     currentStreak.value = 0;
     currentStreakResult.value = '';
-    longestStreak.value = 0;
-    history.clear();
-
-    try {
-      final userId = supabase.auth.currentUser?.id;
-      if (userId == null) {
-        print("Reset failed: User is not logged in.");
-        return;
-      }
-      print("Resetting stats for user: $userId");
-
-      await supabase.from('game_history').delete().eq('user_id', userId);
-      print("Game history for user $userId deleted.");
-
-      await supabase.from('user_stats').upsert({
-        'user_id': userId,
-        'total_flips': 0,
-        'heads_count': 0,
-        'tails_count': 0,
-        'best_streak': 0,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-      print("User stats for user $userId reset.");
-    } catch (e) {
-      print('Error resetting stats: $e');
-    }
+    await _db.userStatsDao.resetStats();
+    await _db.gameHistoryDao.clearHistory();
   }
 
-  // --- Theme Logic ---
   var isDarkMode = false.obs;
-
   void toggleTheme() {
     isDarkMode.value = !isDarkMode.value;
     Get.changeThemeMode(isDarkMode.value ? ThemeMode.dark : ThemeMode.light);
-  }
-
-  @override
-  void onClose() {
-    super.onClose();
   }
 }

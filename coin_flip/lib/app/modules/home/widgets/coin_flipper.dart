@@ -30,7 +30,6 @@ class CoinFlipper extends StatelessWidget {
       animation: rotateAnim,
       child: widget,
       builder: (context, widget) {
-        final isUnder = (ValueKey(controller.isFlipping.value) != widget?.key);
         var tilt = ((animation.value - 0.5).abs() - 0.5) * 0.003;
         tilt = tilt < 0.0 ? 0.0 : tilt;
         return Transform(
@@ -47,22 +46,23 @@ class CoinFlipper extends StatelessWidget {
       key: const ValueKey(true),
       transform: Matrix4.rotationY(pi),
       alignment: Alignment.center,
-      child:
-          Image.asset('assets/images/yazi.png'), // Shows one side during flip
+      child: const Icon(Icons.monetization_on, size: 150),
     );
   }
 
   Widget _buildCoinFace(String result) {
-    String imagePath = 'assets/images/yazi.png'; // Default
-    if (result == 'YAZI') {
-      imagePath = 'assets/images/yazi.png';
-    } else if (result == 'TURA') {
-      imagePath = 'assets/images/Tura.png';
+    IconData iconData;
+    if (result.toUpperCase() == 'YAZI') {
+      iconData = Icons.looks_one;
+    } else if (result.toUpperCase() == 'TURA') {
+      iconData = Icons.looks_two;
+    } else {
+      iconData = Icons.help_outline; // Default icon
     }
 
     return Container(
       key: ValueKey(result),
-      child: Image.asset(imagePath, height: 150),
+      child: Icon(iconData, size: 150),
     );
   }
 }

@@ -16,10 +16,17 @@ class HomeView extends GetView<HomeController> {
         title: const Text('yazi Tura Gelişmiş'),
         actions: [
           IconButton(
+            tooltip: 'Hesabım',
+            icon: const Icon(Icons.account_circle),
+            onPressed: () {
+              Get.toNamed(Routes.account);
+            },
+          ),
+          IconButton(
             tooltip: 'İstatistikler',
             icon: const Icon(Icons.bar_chart),
             onPressed: () {
-              Get.toNamed(Routes.STATS);
+              Get.toNamed(Routes.stats);
             },
           ),
           IconButton(

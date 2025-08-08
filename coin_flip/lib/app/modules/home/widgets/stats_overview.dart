@@ -13,13 +13,14 @@ class StatsOverview extends StatelessWidget {
       () => Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatCard('Toplam Atış', controller.totalFlips.value.toString()),
+          _buildStatCard(
+              'Toplam Atış', controller.userStats.value.totalFlips.toString()),
           _buildStatCard(
             'Seri',
             '${controller.currentStreak.value} (${controller.currentStreakResult.value.capitalizeFirst ?? ''})',
           ),
           _buildStatCard(
-              'Rekor Seri', controller.longestStreak.value.toString()),
+              'Rekor Seri', controller.userStats.value.bestStreak.toString()),
         ],
       ),
     );

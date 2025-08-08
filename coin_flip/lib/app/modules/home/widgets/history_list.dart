@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:coin_flip/app/modules/home/controllers/home_controller.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class HistoryList extends StatelessWidget {
   final HomeController controller = Get.find();
@@ -9,6 +10,9 @@ class HistoryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Türkçe zaman ifadeleri için timeago kütüphanesini ayarla
+    timeago.setLocaleMessages('tr', timeago.TrMessages());
+
     return Container(
       height: 120,
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -20,27 +24,39 @@ class HistoryList extends StatelessWidget {
                 reverse: true,
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (context, index) {
-                  final result = controller.history[index];
+                  final entry = controller.history[index];
+                  final isHeads = entry.result.toUpperCase() == 'YAZI';
+
                   return Container(
-                    width: 80,
+                    width: 100, // Genişliği artırdık
                     margin: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset(
-                          result == 'yazi'
-                              ? 'assets/images/yazi.png'
-                              : 'assets/images/Tura.png',
-                          height: 40,
+                        CircleAvatar(
+                          backgroundColor:
+                              isHeads ? Colors.redAccent : Colors.green,
+                          child: Text(
+                            isHeads ? 'Y' : 'T',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          result.capitalizeFirst!,
+                          entry.result.capitalizeFirst!,
                           style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          timeago.format(entry.playedAt, locale: 'tr'),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
                     ),
